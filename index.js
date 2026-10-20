@@ -15,7 +15,8 @@ var createChannel = function getSideChannelMap() {
 	/** @typedef {{ assert: (key: K) => void, 'delete': (key: K) => boolean, get: (key: K) => V | undefined, has: (key: K) => boolean, set: (key: K, value: V) => void }} Channel */
 
 	/** @type {{ 'delete': (key: K) => boolean, get: (key: K) => V | undefined, has: (key: K) => boolean, set: (key: K, value: V) => void }} */
-	var storage = getStorage();
+	// eslint-disable-next-line no-extra-parens
+	var storage = /** @type {Exclude<typeof getStorage, false>} */ (getStorage)();
 
 	/** @type {Channel} */
 	var channel = {

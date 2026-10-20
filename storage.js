@@ -57,7 +57,6 @@ var createStorage = function getStorage() {
 		}
 	};
 
-	// @ts-expect-error TODO: figure out why TS is erroring here
 	return channel;
 };
 
