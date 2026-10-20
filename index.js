@@ -1,30 +1,21 @@
 'use strict';
 
-var GetIntrinsic = require('get-intrinsic');
-var callBound = require('call-bound');
+// Capture the shared intrinsics before initializing the public error formatter.
+require('get-intrinsic');
+require('call-bound');
 var inspect = require('object-inspect');
-
 var $TypeError = require('es-errors/type');
-var $Map = GetIntrinsic('%Map%', true);
+var getStorage = require('./storage');
 
-/** @type {<K, V>(thisArg: Map<K, V>, key: K) => V} */
-var $mapGet = callBound('Map.prototype.get', true);
-/** @type {<K, V>(thisArg: Map<K, V>, key: K, value: V) => void} */
-var $mapSet = callBound('Map.prototype.set', true);
-/** @type {<K, V>(thisArg: Map<K, V>, key: K) => boolean} */
-var $mapHas = callBound('Map.prototype.has', true);
-/** @type {<K, V>(thisArg: Map<K, V>, key: K) => boolean} */
-var $mapDelete = callBound('Map.prototype.delete', true);
-/** @type {<K, V>(thisArg: Map<K, V>) => number} */
-var $mapSize = callBound('Map.prototype.size', true);
+/**
+ * @template K, V
+ * @returns {{ assert: (key: K) => void, 'delete': (key: K) => boolean, get: (key: K) => V | undefined, has: (key: K) => boolean, set: (key: K, value: V) => void }}
+ */
+var createChannel = function getSideChannelMap() {
+	/** @typedef {{ assert: (key: K) => void, 'delete': (key: K) => boolean, get: (key: K) => V | undefined, has: (key: K) => boolean, set: (key: K, value: V) => void }} Channel */
 
-/** @type {import('.')} */
-module.exports = !!$Map && /** @type {Exclude<import('.'), false>} */ function getSideChannelMap() {
-	/** @typedef {ReturnType<typeof getSideChannelMap>} Channel */
-	/** @typedef {Parameters<Channel['get']>[0]} K */
-	/** @typedef {Parameters<Channel['set']>[1]} V */
-
-	/** @type {Map<K, V> | undefined} */ var $m;
+	/** @type {{ 'delete': (key: K) => boolean, get: (key: K) => V | undefined, has: (key: K) => boolean, set: (key: K, value: V) => void }} */
+	var storage = getStorage();
 
 	/** @type {Channel} */
 	var channel = {
@@ -33,36 +24,13 @@ module.exports = !!$Map && /** @type {Exclude<import('.'), false>} */ function g
 				throw new $TypeError('Side channel does not contain ' + inspect(key));
 			}
 		},
-		'delete': function (key) {
-			if ($m) {
-				var result = $mapDelete($m, key);
-				if ($mapSize($m) === 0) {
-					$m = void undefined;
-				}
-				return result;
-			}
-			return false;
-		},
-		get: function (key) { // eslint-disable-line consistent-return
-			if ($m) {
-				return $mapGet($m, key);
-			}
-		},
-		has: function (key) {
-			if ($m) {
-				return $mapHas($m, key);
-			}
-			return false;
-		},
-		set: function (key, value) {
-			if (!$m) {
-				// @ts-expect-error TS can't handle narrowing a variable inside a closure
-				$m = new $Map();
-			}
-			$mapSet($m, key, value);
-		}
+		'delete': storage['delete'],
+		get: storage.get,
+		has: storage.has,
+		set: storage.set
 	};
 
-	// @ts-expect-error TODO: figure out why TS is erroring here
 	return channel;
 };
+
+module.exports = !!getStorage && createChannel;

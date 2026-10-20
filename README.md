@@ -60,3 +60,17 @@ Clone the repo, `npm install`, and run `npm test`
 [codecov-url]: https://app.codecov.io/gh/ljharb/side-channel-map/
 [actions-image]: https://img.shields.io/github/check-runs/ljharb/side-channel-map/main
 [actions-url]: https://github.com/ljharb/side-channel-map/actions
+
+## Storage-only entry
+
+Consumers that only need storage can require `side-channel-map/storage` instead of the package root. It provides the same `get`, `has`, `set`, and `delete` behavior, without `assert` or its error-formatting dependency. The existing root API and assertion messages are unchanged.
+
+```js
+var getStorage = require('side-channel-map/storage');
+if (getStorage) {
+    var storage = getStorage();
+    var key = {};
+    storage.set(key, 'value');
+    storage.get(key); // 'value'
+}
+```
